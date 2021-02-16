@@ -131,6 +131,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # The class name of the partition assignment strategy that the client will use to distribute
   # partition ownership amongst consumer instances
   config :partition_assignment_strategy, :validate => :string
+  # ID of the pipeline whose events you want to read from.
+  def pipeline_id
+    respond_to?(:execution_context) ? execution_context.pipeline_id : "main"
+  end
   # The size of the TCP receive buffer (SO_RCVBUF) to use when reading data.
   config :receive_buffer_bytes, :validate => :string
   # The amount of time to wait before attempting to reconnect to a given host.
@@ -223,7 +227,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   public
   def run(logstash_queue)
-    @runner_consumers = consumer_threads.times.map { |i| create_consumer("#{client_id}-#{i}") }
+    @runner_consumers = consumer_threads.times.map { |i| create_consumer("#{client_id}-#{i}-#{pipeline_id}") }
     @runner_threads = @runner_consumers.map { |consumer| thread_runner(logstash_queue, consumer) }
     @runner_threads.each { |t| t.join }
   end # def run
